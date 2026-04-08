@@ -12,6 +12,10 @@ be the split)
 What this means is the octree is essentially stored as a few big chunks of memory (a few kB per Chunk) and then we use it to 
 calculate forces. This force calculation will also take place on this file. 
 */
+
+#define startDepth 4
+#define leafDepth 4
+
 typedef struct node node;
 typedef struct particle particle;
 
@@ -41,9 +45,24 @@ void treeInit(double* widths) {
     x3Width=widths[2];
 }
 
+/*
+the optimization to make is that the bottom pools should store just particles with no children because their children can be
+easily inferred at runtime from their array index. 
+Consider a particle at index i, i=\sum_{i=0}^d c_k 8^k, if c_d!=0 then it has no children as it's a leaf, on the other hand if
+c_d=0 we look at the first c_k that isn't 0, 
+*/
+
 //particles is an array of every particle we use to construct the tree
 node* createTree(node* rootPass,particle* particles, long particleCount) {
     int done=0;
+    for(int i=0; i<8; i++) {
+        root->children[i]=makePoolNode(startDepth);
+    }
+    while(done==0) {
+        for(int i=1; i<=particleCount; i++) {
+
+        }
+    }
     return root;
 }
 // want to somehow handle tree construction layer by layer efficiently.  
@@ -51,3 +70,20 @@ node* handleTreeLayer(node* parent,particle* subParticles) {
     return root;
 }
 
+node* makePoolNode(int size) {
+    //bit shift is 8^n, multiplication by 3 gives shift by power of 8 rather than 2
+    long poolSize=(1-(1<<(size*3)))/(1-8);
+    node* pool=calloc(poolSize, sizeof(node));
+    return pool;
+}
+
+//assume it to be depth 4
+particle* makePoolParticle() {
+    long poolSize=585;
+    particle* pool=calloc(poolSize, sizeof(particle));
+    return pool;
+}
+
+long getChildParticle(long index, int child) {
+    return 8*index+child;
+}
