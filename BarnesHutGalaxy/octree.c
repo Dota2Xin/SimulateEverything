@@ -15,6 +15,7 @@ calculate forces. This force calculation will also take place on this file.
 
 #define startDepth 4
 #define leafDepth 4
+#define basePoolSize 585
 
 typedef struct node node;
 typedef struct particle particle;
@@ -77,10 +78,9 @@ node* makePoolNode(int size) {
     return pool;
 }
 
-//assume it to be depth 4
+//might want more than this
 particle* makePoolParticle() {
-    long poolSize=585;
-    particle* pool=calloc(poolSize, sizeof(particle));
+    particle* pool=calloc(basePoolSize, sizeof(particle));
     return pool;
 }
 
