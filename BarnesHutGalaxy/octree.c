@@ -19,6 +19,12 @@ calculate forces. This force calculation will also take place on this file.
 
 typedef struct node node;
 typedef struct particle particle;
+typedef struct particleArray particleArray;
+
+struct particleArray {
+    particle* p;
+    long size;
+};
 
 struct particle {
     double mass;
@@ -69,25 +75,38 @@ node* createTree(node* root,particle* particles, long particleCount) {
     return root;
 }
 // want to somehow handle tree construction layer by layer efficiently.  
-node* handleTreeLayer(node* parent,particle* particles, long particleCount, double* coordinates, double* sizes) {
+node* handleTreeLayer(node* parent,particle* particles, long particleCount, double* coordinates, double boxSize) {
     long baseSize=nextTwoPower((particleCount/8));
-    char child1=0;
-    char child2=0;
-    char child3=0;
-    char child4=0;
-    char child5=0;
-    char child6=0;
-    char child7=0;
-    char child8=0;
-    particle* child1Particles=create(baseSize);
-    particle* child2Particles=create(baseSize);
-    particle* child3Particles=create(baseSize);
-    particle* child4Particles=create(baseSize);
+    char* children[8]={0,0,0,0,0,0,0,0};
+    long* childLengths[8];
+    long* childCurrLengths[8];
+    particle** childParticles[8];
 
+    double half=boxSize/2;
     for (int i=0; i<=particleCount; i++) {
+        char child=0;
         double x=particles[i].x1;
         double y=particles[i].x2;
         double z=particles[i].x3;
+
+        if (x-coordinates[0]>half) {
+            child+=1;
+        }
+        if (y-coordinates[1]>half) {
+            child+=2;
+        }
+        if (z-coordinates[2]>half) {
+            child+=4;
+        }
+
+        if (children[child]==0) {
+            children[child]=1;
+            childParticles[child]=create(baseSize);
+            childLengths[child]=baseSize;
+            childCurrLengths[child]=0;
+
+            
+        }
 
 
     }
@@ -128,12 +147,18 @@ long getChildParticle(long index, int child) {
 //////DYNAMIC ARRAY FOR PARTICLES METHOD/////////
 
 particle* create(long length) {
-    return calloc(length, sizeof(particle));
+    particle* base=calloc(length, sizeof(particle));
+    particleArray main;
+    main.p=&base;
+    main.size=length;
+
+    return ;
 }
 
 particle* append(particle* curr, particle add, long lengthCurr, long lengthTrue) {
     if(lengthCurr!=lengthTrue) {
         curr[lengthCurr]=add;
+        return curr;
     } else {
         particle* newArr=calloc(2*lengthTrue, sizeof(particle));
         for(int i=0; i<lengthCurr; i++) {
@@ -141,5 +166,6 @@ particle* append(particle* curr, particle add, long lengthCurr, long lengthTrue)
         }
         free(curr);
         newArr[lengthCurr]=add;
+        return newArr;
     }
 }
