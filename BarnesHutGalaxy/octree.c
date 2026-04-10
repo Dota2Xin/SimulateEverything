@@ -35,7 +35,6 @@ struct node {
 //13GB of memory. Realistically it will stay quite a bit below this for the duration of the simulation. The lower bound is going
 //to be 1GB as that's how much it takes to represent 10^7 particles. Do most testing on 10^4 or 10^5 particles probably. 
 
-node* root;
 double x1Width;
 double x2Width;
 double x3Width;
@@ -52,10 +51,13 @@ easily inferred at runtime from their array index.
 Consider a particle at index i, i=\sum_{i=0}^d c_k 8^k, if c_d!=0 then it has no children as it's a leaf, on the other hand if
 c_d=0 we look at the first c_k that isn't 0, 
 */
+node* recurseOctree(node* rootPass, particle* particles, long particleCount) {
 
+}
 //particles is an array of every particle we use to construct the tree
-node* createTree(node* rootPass,particle* particles, long particleCount) {
+node* createTree(node* root,particle* particles, long particleCount) {
     int done=0;
+    int allocatedCount=0;
     for(int i=0; i<8; i++) {
         root->children[i]=makePoolNode(startDepth);
     }
@@ -67,8 +69,31 @@ node* createTree(node* rootPass,particle* particles, long particleCount) {
     return root;
 }
 // want to somehow handle tree construction layer by layer efficiently.  
-node* handleTreeLayer(node* parent,particle* subParticles) {
-    return root;
+node* handleTreeLayer(node* parent,particle* particles, long particleCount, double* coordinates, double* sizes) {
+    long baseSize=(particleCount/8)
+    particle* child1Particles=create(particleCount/8)
+
+    for (int i=0; i<=particleCount; i++) {
+        double x=particles[i].x1;
+        double y=particles[i].x2;
+        double z=particles[i].x3;
+
+
+    }
+    return parent;
+}
+
+long nextTwoPower(long input) {
+    long v=input;
+    v--;
+    v|= v>>1;
+    v|= v>>2;
+    v|= v>>4;
+    v|= v>>8;
+    v|= v>>16;
+    v|= v>>32;
+    v++;
+    return v;
 }
 
 node* makePoolNode(int size) {
@@ -78,7 +103,7 @@ node* makePoolNode(int size) {
     return pool;
 }
 
-//might want more than this
+//might want more than this3
 particle* makePoolParticle() {
     particle* pool=calloc(basePoolSize, sizeof(particle));
     return pool;
@@ -86,4 +111,24 @@ particle* makePoolParticle() {
 
 long getChildParticle(long index, int child) {
     return 8*index+child;
+}
+
+
+//////DYNAMIC ARRAY FOR PARTICLES METHOD/////////
+
+particle* create(long length) {
+    return calloc(length, sizeof(particle));
+}
+
+particle* append(particle* curr, particle add, long lengthCurr, long lengthTrue) {
+    if(lengthCurr!=lengthTrue) {
+        curr[lengthCurr]=add;
+    } else {
+        particle* newArr=calloc(2*lengthTrue, sizeof(particle));
+        for(int i=0; i<lengthCurr; i++) {
+            newArr[i]=curr[i];
+        }
+        free(curr);
+        newArr[lengthCurr]=add;
+    }
 }
