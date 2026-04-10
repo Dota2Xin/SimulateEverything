@@ -57,11 +57,11 @@ easily inferred at runtime from their array index.
 Consider a particle at index i, i=\sum_{i=0}^d c_k 8^k, if c_d!=0 then it has no children as it's a leaf, on the other hand if
 c_d=0 we look at the first c_k that isn't 0, 
 */
-node* recurseOctree(node* rootPass, particle* particles, long particleCount) {
+node* recurseOctree(node* rootPass, particle particles[], long particleCount) {
 
 }
 //particles is an array of every particle we use to construct the tree
-node* createTree(node* root,particle* particles, long particleCount) {
+node* createTree(node* root,particle particles[], long particleCount) {
     int done=0;
     int allocatedCount=0;
     for(int i=0; i<8; i++) {
@@ -75,19 +75,37 @@ node* createTree(node* root,particle* particles, long particleCount) {
     return root;
 }
 // want to somehow handle tree construction layer by layer efficiently.  
-node* handleTreeLayer(node* parent,particle* particles, long particleCount, double* coordinates, double boxSize) {
+node handleTreeLayer(particle particles[], long particleCount, double* coordinates, double boxSize) {
+
+    //check leaf case
+    if(particleCount==1) {
+        particle curr=particles[0];
+        node main ={.children={0,0,0,0,0,0,0,0}, .p=curr};
+        free(particles);
+        return main;
+    }
+
     long baseSize=nextTwoPower((particleCount/8));
-    char* children[8]={0,0,0,0,0,0,0,0};
-    long* childLengths[8];
-    long* childCurrLengths[8];
-    particle** childParticles[8];
+    long childLengths[8]={0,0,0,0,0,0,0,0};
+    particleArray childParticles[8];
+
+    double totalMass=0;
+    double centerOfMassX=0;
+    double centerOfMassY=0;
+    double centerOfMassZ=0;
 
     double half=boxSize/2;
-    for (int i=0; i<=particleCount; i++) {
+    for (int i=0; i<particleCount; i++) {
         char child=0;
         double x=particles[i].x1;
         double y=particles[i].x2;
         double z=particles[i].x3;
+        double mass=particles[i].mass;
+
+        totalMass+=mass;
+        centerOfMassX+=mass*x;
+        centerOfMassY+=mass*y;
+        centerOfMassZ+=mass*z;
 
         if (x-coordinates[0]>half) {
             child+=1;
@@ -99,18 +117,26 @@ node* handleTreeLayer(node* parent,particle* particles, long particleCount, doub
             child+=4;
         }
 
-        if (children[child]==0) {
-            children[child]=1;
+        if (childLengths[child]==0) {
             childParticles[child]=create(baseSize);
-            childLengths[child]=baseSize;
-            childCurrLengths[child]=0;
-
-            
+            childLengths[child]=1;
+            append(childParticles[child], particles[i], 0);
+        } else {
+            append(childParticles[child], particles[i], childLengths[child]);
+            childLengths[child]+=1;
         }
-
-
     }
-    return parent;
+
+    particle mainP={.x1=centerOfMassX/totalMass, .x2=centerOfMassY/totalMass, .x3=centerOfMassZ/totalMass, .mass=totalMass};
+    node main ={.children={0,0,0,0,0,0,0,0}, .p=mainP};
+    for(int i=0; i<8; i++) {
+        if (childLengths[i]!=0) {
+            //recursive step main.children[i]=&handleTreeLayer(...) etc...
+        }
+    }
+
+
+    return main;
 }
 
 long nextTwoPower(long input) {
@@ -146,19 +172,20 @@ long getChildParticle(long index, int child) {
 
 //////DYNAMIC ARRAY FOR PARTICLES METHOD/////////
 
-particle* create(long length) {
+particleArray create(long length) {
     particle* base=calloc(length, sizeof(particle));
     particleArray main;
     main.p=&base;
     main.size=length;
 
-    return ;
+    return main;
 }
 
-particle* append(particle* curr, particle add, long lengthCurr, long lengthTrue) {
+void append(particleArray currArr, particle add, long lengthCurr) {
+    long lengthTrue=currArr.size;
+    particle* curr= currArr.p;
     if(lengthCurr!=lengthTrue) {
         curr[lengthCurr]=add;
-        return curr;
     } else {
         particle* newArr=calloc(2*lengthTrue, sizeof(particle));
         for(int i=0; i<lengthCurr; i++) {
@@ -166,6 +193,8 @@ particle* append(particle* curr, particle add, long lengthCurr, long lengthTrue)
         }
         free(curr);
         newArr[lengthCurr]=add;
-        return newArr;
+        currArr.p=newArr;
+        currArr.size=2*lengthTrue;
+        return;
     }
 }
