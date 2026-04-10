@@ -70,8 +70,19 @@ node* createTree(node* root,particle* particles, long particleCount) {
 }
 // want to somehow handle tree construction layer by layer efficiently.  
 node* handleTreeLayer(node* parent,particle* particles, long particleCount, double* coordinates, double* sizes) {
-    long baseSize=(particleCount/8)
-    particle* child1Particles=create(particleCount/8)
+    long baseSize=nextTwoPower((particleCount/8));
+    char child1=0;
+    char child2=0;
+    char child3=0;
+    char child4=0;
+    char child5=0;
+    char child6=0;
+    char child7=0;
+    char child8=0;
+    particle* child1Particles=create(baseSize);
+    particle* child2Particles=create(baseSize);
+    particle* child3Particles=create(baseSize);
+    particle* child4Particles=create(baseSize);
 
     for (int i=0; i<=particleCount; i++) {
         double x=particles[i].x1;
