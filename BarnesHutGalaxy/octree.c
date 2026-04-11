@@ -57,9 +57,6 @@ easily inferred at runtime from their array index.
 Consider a particle at index i, i=\sum_{i=0}^d c_k 8^k, if c_d!=0 then it has no children as it's a leaf, on the other hand if
 c_d=0 we look at the first c_k that isn't 0, 
 */
-node* recurseOctree(node* rootPass, particle particles[], long particleCount) {
-
-}
 //particles is an array of every particle we use to construct the tree
 node createTree(particle particles[], long particleCount, double domainSize) {
     double coordinates[3]={-domainSize/2.0, -domainSize/2.0, -domainSize/2.0};
