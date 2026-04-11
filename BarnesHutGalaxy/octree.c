@@ -28,9 +28,9 @@ struct particleArray {
 
 struct particle {
     double mass;
-    double x1;
-    double x2;
-    double x3;
+    double x;
+    double y;
+    double z;
 };
 
 struct node {
@@ -41,14 +41,14 @@ struct node {
 //13GB of memory. Realistically it will stay quite a bit below this for the duration of the simulation. The lower bound is going
 //to be 1GB as that's how much it takes to represent 10^7 particles. Do most testing on 10^4 or 10^5 particles probably. 
 
-double x1Width;
-double x2Width;
-double x3Width;
+double xWidth;
+double yWidth;
+double zWidth;
 
 void treeInit(double* widths) {
-    x1Width=widths[0];
-    x2Width=widths[1];
-    x3Width=widths[2];
+    xWidth=widths[0];
+    yWidth=widths[1];
+    zWidth=widths[2];
 }
 
 /*
@@ -61,22 +61,13 @@ node* recurseOctree(node* rootPass, particle particles[], long particleCount) {
 
 }
 //particles is an array of every particle we use to construct the tree
-node* createTree(node* root,particle particles[], long particleCount) {
-    int done=0;
-    int allocatedCount=0;
-    for(int i=0; i<8; i++) {
-        root->children[i]=makePoolNode(startDepth);
-    }
-    while(done==0) {
-        for(int i=1; i<=particleCount; i++) {
-
-        }
-    }
-    return root;
+node createTree(particle particles[], long particleCount, double domainSize) {
+    double coordinates[3]={-domainSize/2.0, -domainSize/2.0, -domainSize/2.0};
+    node root=handleTreeLayer(particles, particleCount, coordinates, domainSize, 1);
 }
 
 // want to somehow handle tree construction layer by layer efficiently.  
-node handleTreeLayer(particle particles[], long particleCount, double coordinates[], double boxSize) {
+node handleTreeLayer(particle particles[], long particleCount, double coordinates[], double boxSize, char first) {
 
     //check leaf case
     if(particleCount==1) {
@@ -98,9 +89,9 @@ node handleTreeLayer(particle particles[], long particleCount, double coordinate
     double half=boxSize/2.0;
     for (int i=0; i<particleCount; i++) {
         char child=0;
-        double x=particles[i].x1;
-        double y=particles[i].x2;
-        double z=particles[i].x3;
+        double x=particles[i].x;
+        double y=particles[i].y;
+        double z=particles[i].z;
         double mass=particles[i].mass;
 
         totalMass+=mass;
@@ -127,15 +118,16 @@ node handleTreeLayer(particle particles[], long particleCount, double coordinate
             childLengths[child]+=1;
         }
     }
-
-    particle mainP={.x1=centerOfMassX/totalMass, .x2=centerOfMassY/totalMass, .x3=centerOfMassZ/totalMass, .mass=totalMass};
+    if(first!=1) {
+        free(particles);
+    }
+    particle mainP={.x=centerOfMassX/totalMass, .y=centerOfMassY/totalMass, .z=centerOfMassZ/totalMass, .mass=totalMass};
     node main ={.children={0,0,0,0,0,0,0,0}, .p=mainP};
     for(int i=0; i<8; i++) {
         if (childLengths[i]!=0) {
             double childCoord[]={(i&1)*half,((i>>1)&1)*half,((i>>2)&1)*half};
-            node temp=handleTreeLayer(childParticles[i].p, childLengths[i],childCoord, half);
+            node temp=handleTreeLayer(childParticles[i].p, childLengths[i],childCoord, half, 0);
             main.children[i]=&temp;
-            //recursive step main.children[i]=&handleTreeLayer(...) etc...
         } 
     }
 
