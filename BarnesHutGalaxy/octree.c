@@ -74,8 +74,9 @@ node* createTree(node* root,particle particles[], long particleCount) {
     }
     return root;
 }
+
 // want to somehow handle tree construction layer by layer efficiently.  
-node handleTreeLayer(particle particles[], long particleCount, double* coordinates, double boxSize) {
+node handleTreeLayer(particle particles[], long particleCount, double coordinates[], double boxSize) {
 
     //check leaf case
     if(particleCount==1) {
@@ -94,7 +95,7 @@ node handleTreeLayer(particle particles[], long particleCount, double* coordinat
     double centerOfMassY=0;
     double centerOfMassZ=0;
 
-    double half=boxSize/2;
+    double half=boxSize/2.0;
     for (int i=0; i<particleCount; i++) {
         char child=0;
         double x=particles[i].x1;
@@ -131,10 +132,12 @@ node handleTreeLayer(particle particles[], long particleCount, double* coordinat
     node main ={.children={0,0,0,0,0,0,0,0}, .p=mainP};
     for(int i=0; i<8; i++) {
         if (childLengths[i]!=0) {
+            double childCoord[]={(i&1)*half,((i>>1)&1)*half,((i>>2)&1)*half};
+            node temp=handleTreeLayer(childParticles[i].p, childLengths[i],childCoord, half);
+            main.children[i]=&temp;
             //recursive step main.children[i]=&handleTreeLayer(...) etc...
-        }
+        } 
     }
-
 
     return main;
 }
