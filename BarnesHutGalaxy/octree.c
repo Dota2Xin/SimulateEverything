@@ -17,6 +17,7 @@ calculate forces. This force calculation will also take place on this file.
 #define leafDepth 4
 #define basePoolSize 585
 
+
 typedef struct node node;
 typedef struct particle particle;
 typedef struct particleArray particleArray;
@@ -35,6 +36,7 @@ struct particle {
 
 struct node {
     particle p;
+    double size;
     node* children[8];
 };
 //everything here is 8 bytes so we have (4+8)*8=96 bytes per struct. This means an 8-depth tree could hypothetically take up 
@@ -44,6 +46,8 @@ struct node {
 double xWidth;
 double yWidth;
 double zWidth;
+double theta=0.5;
+double epsilon=1.0;
 
 void treeInit(double* widths) {
     xWidth=widths[0];
@@ -58,8 +62,10 @@ Consider a particle at index i, i=\sum_{i=0}^d c_k 8^k, if c_d!=0 then it has no
 c_d=0 we look at the first c_k that isn't 0, 
 */
 //particles is an array of every particle we use to construct the tree
+//the origin isn't the center it is set to be the corner of the cube in what would be the all negative coordinates were the 
+//origin at the center
 node createTree(particle particles[], long particleCount, double domainSize) {
-    double coordinates[3]={-domainSize/2.0, -domainSize/2.0, -domainSize/2.0};
+    double coordinates[3]={0.0,0.0,0.0};
     node root=handleTreeLayer(particles, particleCount, coordinates, domainSize, 1);
 }
 
@@ -69,7 +75,7 @@ node handleTreeLayer(particle particles[], long particleCount, double coordinate
     //check leaf case
     if(particleCount==1) {
         particle curr=particles[0];
-        node main ={.children={0,0,0,0,0,0,0,0}, .p=curr};
+        node main ={.children={0,0,0,0,0,0,0,0}, .p=curr, .size=boxSize};
         free(particles);
         return main;
     }
@@ -119,7 +125,7 @@ node handleTreeLayer(particle particles[], long particleCount, double coordinate
         free(particles);
     }
     particle mainP={.x=centerOfMassX/totalMass, .y=centerOfMassY/totalMass, .z=centerOfMassZ/totalMass, .mass=totalMass};
-    node main ={.children={0,0,0,0,0,0,0,0}, .p=mainP};
+    node main ={.children={0,0,0,0,0,0,0,0}, .p=mainP, .size=boxSize};
     for(int i=0; i<8; i++) {
         if (childLengths[i]!=0) {
             double childCoord[]={(i&1)*half,((i>>1)&1)*half,((i>>2)&1)*half};
@@ -144,23 +150,29 @@ long nextTwoPower(long input) {
     return v;
 }
 
-node* makePoolNode(int size) {
-    //bit shift is 8^n, multiplication by 3 gives shift by power of 8 rather than 2
-    long poolSize=(1-(1<<(size*3)))/(1-8);
-    node* pool=calloc(poolSize, sizeof(node));
-    return pool;
-}
+//calculates the forces in our octree using the s/d method. 
+void calcForces(node root, double coordinates[], double forces[]) {
+    for(int i=0; i<8; i++) {
+        if (root.children[i]==0) {
+            continue;
+        }
+        node curr=*root.children[i];
+        double xDiff=coordinates[0]-curr.p.x;
+        double yDiff=coordinates[1]-curr.p.y;
+        double zDiff=coordinates[2]-curr.p.z;
 
-//might want more than this3
-particle* makePoolParticle() {
-    particle* pool=calloc(basePoolSize, sizeof(particle));
-    return pool;
+        double dist=sqrt(xDiff*xDiff+yDiff*yDiff+zDiff*zDiff);
+        double x=curr.size/dist;
+        if (x<theta) {
+            forces[0]+=curr.p.mass*xDiff/(pow(dist*dist+epsilon*epsilon, 1.5));
+            forces[1]+=curr.p.mass*yDiff/(pow(dist*dist+epsilon*epsilon, 1.5));
+            forces[2]+=curr.p.mass*zDiff/(pow(dist*dist+epsilon*epsilon, 1.5));
+            return;
+        } else {
+            calcForces(curr, coordinates, forces);
+        }
+    }
 }
-
-long getChildParticle(long index, int child) {
-    return 8*index+child;
-}
-
 
 //////DYNAMIC ARRAY FOR PARTICLES METHOD/////////
 
@@ -190,3 +202,23 @@ void append(particleArray currArr, particle add, long lengthCurr) {
         return;
     }
 }
+
+///////////TRASH////////////
+/*
+node* makePoolNode(int size) {
+    //bit shift is 8^n, multiplication by 3 gives shift by power of 8 rather than 2
+    long poolSize=(1-(1<<(size*3)))/(1-8);
+    node* pool=calloc(poolSize, sizeof(node));
+    return pool;
+}
+
+//might want more than this3
+particle* makePoolParticle() {
+    particle* pool=calloc(basePoolSize, sizeof(particle));
+    return pool;
+}
+
+long getChildParticle(long index, int child) {
+    return 8*index+child;
+}
+*/
